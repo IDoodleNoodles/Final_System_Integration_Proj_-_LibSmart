@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.1.xsd">
+
+    <changeSet id="1" author="system" context="dev,prod">
+        <description>Add audit fields to users table and create sessions table for database-backed authentication.</description>
+
+        <!-- Add updated_at column to users if it doesn't exist -->
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="users" columnName="updated_at"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="users">
+            <column name="updated_at" type="TIMESTAMP"/>
+        </addColumn>
+
+        <!-- Add deleted_at column to users if it doesn't exist -->
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="users" columnName="deleted_at"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="users">
+            <column name="deleted_at" type="TIMESTAMP"/>
+        </addColumn>
+
+        <!-- Remove old indexes if they exist for re-creation -->
+        <preConditions onFail="MARK_RAN">
+            <indexExists indexName="idx_username"/>
+        </preConditions>
+        <dropIndex indexName="idx_username" tableName="users"/>
+
+        <!-- Remove old indexes if they exist for re-creation -->
+        <preConditions onFail="MARK_RAN">
+            <indexExists indexName="idx_email"/>
+        </preConditions>
+        <dropIndex indexName="idx_email" tableName="users"/>
+
+        <!-- Re-create indexes with deleted_at filter for soft-delete support -->
+        <createIndex indexName="idx_username" tableName="users" unique="true">
+            <column name="username"/>
+        </createIndex>
+
+        <createIndex indexName="idx_email" tableName="users" unique="true">
+            <column name="email"/>
+        </createIndex>
+
+        <createIndex indexName="idx_deleted_at" tableName="users">
+            <column name="deleted_at"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="2" author="system" context="dev,prod">
+        <description>Create sessions table for database-backed token management with expiration and revocation support.</description>
+
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="sessions"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="sessions">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_sessions_user_id" references="users(id)"/>
+            </column>
+            <column name="token" type="VARCHAR(36)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_sessions_token"/>
+            </column>
+            <column name="expires_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_accessed_at" type="TIMESTAMP"/>
+            <column name="is_revoked" type="BOOLEAN" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Create indexes for efficient session lookups -->
+        <createIndex indexName="idx_sessions_token" tableName="sessions" unique="true">
+            <column name="token"/>
+        </createIndex>
+
+        <createIndex indexName="idx_sessions_user_id" tableName="sessions">
+            <column name="user_id"/>
+        </createIndex>
+
+        <createIndex indexName="idx_sessions_expires_at" tableName="sessions">
+            <column name="expires_at"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>
