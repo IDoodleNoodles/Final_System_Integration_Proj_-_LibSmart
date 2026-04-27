@@ -1,25 +1,28 @@
 package com.example.demo.service;
 
-/**
- * Composable interface for password encoding and verification.
- * Abstracts password security concerns for pluggable implementations.
- */
-public interface PasswordService {
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
 
-    /**
-     * Encode a raw password using a secure hashing algorithm.
-     *
-     * @param rawPassword the plain text password
-     * @return the encoded/hashed password
-     */
-    String encodePassword(String rawPassword);
+@Service
+public class PasswordService {
 
-    /**
-     * Verify a raw password against an encoded password.
-     *
-     * @param rawPassword     the plain text password to verify
-     * @param encodedPassword the previously encoded password
-     * @return true if passwords match, false otherwise
-     */
-    boolean matchesPassword(String rawPassword, String encodedPassword);
+    private final PasswordEncoder passwordEncoder;
+
+    public PasswordService(PasswordEncoder passwordEncoder) {
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    public String encodePassword(String rawPassword) {
+        if (rawPassword == null || rawPassword.isBlank()) {
+            throw new IllegalArgumentException("Password cannot be null or empty");
+        }
+        return passwordEncoder.encode(rawPassword);
+    }
+
+    public boolean matchesPassword(String rawPassword, String encodedPassword) {
+        if (rawPassword == null || encodedPassword == null) {
+            return false;
+        }
+        return passwordEncoder.matches(rawPassword, encodedPassword);
+    }
 }

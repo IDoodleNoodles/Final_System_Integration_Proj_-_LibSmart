@@ -1,15 +1,12 @@
 package com.example.demo.controller;
 
-import com.example.demo.model.ChangePasswordRequest;
-import com.example.demo.model.LoginRequest;
-import com.example.demo.model.LoginResponse;
-import com.example.demo.model.ProfileResponse;
-import com.example.demo.model.RegisterRequest;
-import com.example.demo.model.UpdateProfileRequest;
-import com.example.demo.model.User;
-import com.example.demo.service.AuthenticationService;
-import com.example.demo.service.SessionManagementService;
-import com.example.demo.service.UserManagementService;
+import com.example.demo.model.*;
+import com.example.demo.presentation.AuthResponsePresenter;
+import com.example.demo.service.AuthService;
+import com.example.demo.service.SessionService;
+import com.example.demo.service.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -20,64 +17,55 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.Optional;
 
-/**
- * REST controller for authentication and user profile management.
- * Demonstrates composable ServiceLayer architecture with clear separation of concerns:
- * - AuthenticationService: login/logout workflows
- * - UserManagementService: user CRUD and password management
- * - SessionManagementService: token lifecycle management
- */
 @RestController
 @RequestMapping("/api")
 @CrossOrigin(origins = "http://localhost:3000")
 public class AuthController {
 
-    private final AuthenticationService authenticationService;
-    private final UserManagementService userManagementService;
-    private final SessionManagementService sessionManagementService;
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthController.class);
 
-    public AuthController(
-            AuthenticationService authenticationService,
-            UserManagementService userManagementService,
-            SessionManagementService sessionManagementService) {
-        this.authenticationService = authenticationService;
-        this.userManagementService = userManagementService;
-        this.sessionManagementService = sessionManagementService;
+    private final AuthService authService;
+    private final UserService userService;
+    private final SessionService sessionService;
+    private final AuthResponsePresenter presenter;
+
+    public AuthController(AuthService authService,
+                          UserService userService,
+                          SessionService sessionService,
+                          AuthResponsePresenter presenter) {
+        this.authService = authService;
+        this.userService = userService;
+        this.sessionService = sessionService;
+        this.presenter = presenter;
     }
 
     @PostMapping("/register")
     public ResponseEntity<String> register(@RequestBody RegisterRequest request) {
+        if (isBlank(request.getUsername()) || isBlank(request.getPassword()) || isBlank(request.getEmail())) {
+            return presenter.message(HttpStatus.BAD_REQUEST, "Username, email, and password are required");
+        }
         try {
-            if (isBlank(request.getUsername()) || isBlank(request.getPassword()) || isBlank(request.getEmail())) {
-                return ResponseEntity.badRequest().body("Username, email, and password are required");
-            }
-
-            userManagementService.registerUser(request.getUsername(), request.getEmail(), request.getPassword());
-            return ResponseEntity.status(HttpStatus.CREATED).body("Registration successful");
-
+            userService.registerUser(request.getUsername(), request.getEmail(), request.getPassword());
+            return presenter.message(HttpStatus.CREATED, "Registration successful");
         } catch (IllegalArgumentException ex) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+            return presenter.message(HttpStatus.CONFLICT, ex.getMessage());
         }
     }
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
         if (isBlank(request.getUsername()) || isBlank(request.getPassword())) {
-            return ResponseEntity.badRequest().body(new LoginResponse("Username and password are required", null));
+            return presenter.loginBadRequest("Username and password are required");
         }
-
         try {
-            Optional<String> tokenOptional = authenticationService.authenticate(request.getUsername(), request.getPassword());
-            if (tokenOptional.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(new LoginResponse("Invalid username or password", null));
+            Optional<String> token = authService.authenticate(request.getUsername(), request.getPassword());
+            if (token.isEmpty()) {
+                return presenter.loginUnauthorized("Invalid username or password");
             }
-
-            return ResponseEntity.ok(new LoginResponse("Login successful", tokenOptional.get()));
-
+            return presenter.loginSuccess(token.get());
         } catch (Exception ex) {
-            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-                    .body(new LoginResponse("Authentication service temporarily unavailable", null));
+            LOGGER.error("Login failed for user '{}': {}", request.getUsername(), ex.getMessage(), ex);
+            return presenter.loginServiceUnavailable();
         }
     }
 
@@ -86,81 +74,48 @@ public class AuthController {
         if (isBlank(token)) {
             return ResponseEntity.badRequest().body("Token is required");
         }
-
-        boolean revoked = authenticationService.logout(token);
-        if (revoked) {
-            return ResponseEntity.ok("Logged out successfully");
-        } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid token");
-        }
+        boolean revoked = authService.logout(token);
+        return revoked
+                ? ResponseEntity.ok("Logged out successfully")
+                : ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid token");
     }
 
     @PostMapping("/logout-all-devices")
     public ResponseEntity<String> logoutAllDevices(@RequestHeader(value = "X-Auth-Token", required = false) String token) {
-        Optional<Long> userIdOptional = authenticationService.getUserIdFromToken(token);
-        if (userIdOptional.isEmpty()) {
+        Optional<Long> userId = authService.getUserIdFromToken(token);
+        if (userId.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or missing token");
         }
-
-        authenticationService.logoutAllDevices(userIdOptional.get());
+        authService.logoutAllDevices(userId.get());
         return ResponseEntity.ok("Logged out from all devices");
     }
 
     @GetMapping("/profile")
     public ResponseEntity<?> getProfile(@RequestHeader(value = "X-Auth-Token", required = false) String token) {
-        Optional<Long> userIdOptional = authenticationService.getUserIdFromToken(token);
-        if (userIdOptional.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or missing token");
+        Optional<Long> userId = authService.getUserIdFromToken(token);
+        if (userId.isEmpty()) {
+            return presenter.message(HttpStatus.UNAUTHORIZED, "Invalid or missing token");
         }
-
-        Optional<User> userOptional = userManagementService.findById(userIdOptional.get());
-        if (userOptional.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not found");
+        Optional<User> user = userService.findById(userId.get());
+        if (user.isEmpty() || user.get().isDeleted()) {
+            return presenter.message(HttpStatus.UNAUTHORIZED, "User not found or deleted");
         }
-
-        User user = userOptional.get();
-        if (user.isDeleted()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User account has been deleted");
-        }
-
-        sessionManagementService.updateSessionActivity(token);
-
-        ProfileResponse response = new ProfileResponse();
-        response.setId(user.getId());
-        response.setUsername(user.getUsername());
-        response.setEmail(user.getEmail());
-        response.setFullName(user.getFullName());
-        response.setPhone(user.getPhone());
-        response.setAddress(user.getAddress());
-        response.setCreatedAt(user.getCreatedAt());
-        if (!isBlank(user.getPhotoFileName())) {
-            response.setPhotoReference("/api/profile/photo");
-        }
-
-        return ResponseEntity.ok(response);
+        sessionService.updateSessionActivity(token);
+        return presenter.profileSuccess(user.get());
     }
 
     @PutMapping("/profile")
     public ResponseEntity<String> updateProfile(
             @RequestHeader(value = "X-Auth-Token", required = false) String token,
             @RequestBody UpdateProfileRequest request) {
-        Optional<Long> userIdOptional = authenticationService.getUserIdFromToken(token);
-        if (userIdOptional.isEmpty()) {
+        Optional<Long> userId = authService.getUserIdFromToken(token);
+        if (userId.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or missing token");
         }
-
         try {
-            userManagementService.updateProfile(
-                    userIdOptional.get(),
-                    request.getEmail(),
-                    request.getFullName(),
-                    request.getPhone(),
-                    request.getAddress()
-            );
-
-            sessionManagementService.updateSessionActivity(token);
+            userService.updateProfile(userId.get(), request.getEmail(), request.getFullName(), request.getPhone(), request.getAddress());
+            sessionService.updateSessionActivity(token);
             return ResponseEntity.ok("Profile updated successfully");
-
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
         }
@@ -170,25 +125,17 @@ public class AuthController {
     public ResponseEntity<String> changePassword(
             @RequestHeader(value = "X-Auth-Token", required = false) String token,
             @RequestBody ChangePasswordRequest request) {
-        Optional<Long> userIdOptional = authenticationService.getUserIdFromToken(token);
-        if (userIdOptional.isEmpty()) {
+        Optional<Long> userId = authService.getUserIdFromToken(token);
+        if (userId.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or missing token");
         }
-
         if (isBlank(request.getCurrentPassword()) || isBlank(request.getNewPassword())) {
             return ResponseEntity.badRequest().body("Current password and new password are required");
         }
-
         try {
-            userManagementService.changePassword(
-                    userIdOptional.get(),
-                    request.getCurrentPassword(),
-                    request.getNewPassword()
-            );
-
-            sessionManagementService.updateSessionActivity(token);
+            userService.changePassword(userId.get(), request.getCurrentPassword(), request.getNewPassword());
+            sessionService.updateSessionActivity(token);
             return ResponseEntity.ok("Password updated successfully");
-
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ex.getMessage());
         }
@@ -198,63 +145,48 @@ public class AuthController {
     public ResponseEntity<String> uploadPhoto(
             @RequestHeader(value = "X-Auth-Token", required = false) String token,
             @RequestParam("file") MultipartFile file) throws IOException {
-        Optional<Long> userIdOptional = authenticationService.getUserIdFromToken(token);
-        if (userIdOptional.isEmpty()) {
+        Optional<Long> userId = authService.getUserIdFromToken(token);
+        if (userId.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or missing token");
         }
-
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body("File is required");
         }
-
-        String contentType = file.getContentType();
-        String fileName = file.getOriginalFilename();
-        if (!isSupportedImage(contentType, fileName)) {
+        if (!isSupportedImage(file.getContentType(), file.getOriginalFilename())) {
             return ResponseEntity.badRequest().body("Only .jpg, .jpeg, and .png files are allowed");
         }
-
-        Optional<User> userOptional = userManagementService.findById(userIdOptional.get());
+        Optional<User> userOptional = userService.findById(userId.get());
         if (userOptional.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not found");
         }
-
         User user = userOptional.get();
         user.setPhotoData(file.getBytes());
-        user.setPhotoContentType(contentType);
-        user.setPhotoFileName(fileName);
+        user.setPhotoContentType(file.getContentType());
+        user.setPhotoFileName(file.getOriginalFilename());
         user.markUpdated();
-
-        // Save updated user
-        userManagementService.updateProfile(user.getId(), null, null, null, null);
-        sessionManagementService.updateSessionActivity(token);
-
+        userService.updateProfile(user.getId(), null, null, null, null);
+        sessionService.updateSessionActivity(token);
         return ResponseEntity.ok("Photo uploaded successfully. Reference: /api/profile/photo");
     }
 
     @GetMapping("/profile/photo")
     public ResponseEntity<?> getPhoto(@RequestHeader(value = "X-Auth-Token", required = false) String token) {
-        Optional<Long> userIdOptional = authenticationService.getUserIdFromToken(token);
-        if (userIdOptional.isEmpty()) {
+        Optional<Long> userId = authService.getUserIdFromToken(token);
+        if (userId.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or missing token");
         }
-
-        Optional<User> userOptional = userManagementService.findById(userIdOptional.get());
+        Optional<User> userOptional = userService.findById(userId.get());
         if (userOptional.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not found");
         }
-
         User user = userOptional.get();
         if (user.getPhotoData() == null || user.getPhotoData().length == 0) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No photo found");
         }
-
-        String contentType = user.getPhotoContentType();
-        if (isBlank(contentType)) {
-            contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
-        }
-
-        sessionManagementService.updateSessionActivity(token);
-
+        String contentType = isBlank(user.getPhotoContentType())
+                ? MediaType.APPLICATION_OCTET_STREAM_VALUE
+                : user.getPhotoContentType();
+        sessionService.updateSessionActivity(token);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + safeFileName(user.getPhotoFileName()) + "\"")
                 .contentType(MediaType.parseMediaType(contentType))
@@ -262,27 +194,17 @@ public class AuthController {
     }
 
     private boolean isSupportedImage(String contentType, String fileName) {
-        if ("image/jpeg".equalsIgnoreCase(contentType) || "image/png".equalsIgnoreCase(contentType)) {
-            return true;
-        }
-
-        if (isBlank(fileName)) {
-            return false;
-        }
-
+        if ("image/jpeg".equalsIgnoreCase(contentType) || "image/png".equalsIgnoreCase(contentType)) return true;
+        if (isBlank(fileName)) return false;
         String lower = fileName.toLowerCase();
         return lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".png");
     }
 
     private String safeFileName(String fileName) {
-        if (isBlank(fileName)) {
-            return "photo";
-        }
-        return fileName.replace('"', '_');
+        return isBlank(fileName) ? "photo" : fileName.replace('"', '_');
     }
 
     private boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
     }
 }
-

@@ -3,10 +3,6 @@ package com.example.demo.model;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
-/**
- * Represents an authenticated user session with token-based tracking.
- * Enables composable session management with tokens that can expire.
- */
 @Entity
 @Table(name = "sessions", indexes = {
     @Index(name = "idx_token", columnList = "token", unique = true),
@@ -52,74 +48,31 @@ public class Session {
         this.isRevoked = false;
     }
 
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public User getUser() { return user; }
+    public void setUser(User user) { this.user = user; }
 
-    public User getUser() {
-        return user;
-    }
+    public String getToken() { return token; }
+    public void setToken(String token) { this.token = token; }
 
-    public void setUser(User user) {
-        this.user = user;
-    }
+    public LocalDateTime getExpiresAt() { return expiresAt; }
+    public void setExpiresAt(LocalDateTime expiresAt) { this.expiresAt = expiresAt; }
 
-    public String getToken() {
-        return token;
-    }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
-    public void setToken(String token) {
-        this.token = token;
-    }
+    public LocalDateTime getLastAccessedAt() { return lastAccessedAt; }
+    public void setLastAccessedAt(LocalDateTime lastAccessedAt) { this.lastAccessedAt = lastAccessedAt; }
 
-    public LocalDateTime getExpiresAt() {
-        return expiresAt;
-    }
+    public Boolean getIsRevoked() { return isRevoked; }
+    public void setIsRevoked(Boolean revoked) { isRevoked = revoked; }
 
-    public void setExpiresAt(LocalDateTime expiresAt) {
-        this.expiresAt = expiresAt;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getLastAccessedAt() {
-        return lastAccessedAt;
-    }
-
-    public void setLastAccessedAt(LocalDateTime lastAccessedAt) {
-        this.lastAccessedAt = lastAccessedAt;
-    }
-
-    public Boolean getIsRevoked() {
-        return isRevoked;
-    }
-
-    public void setIsRevoked(Boolean revoked) {
-        isRevoked = revoked;
-    }
-
-    /**
-     * Checks if the session is still valid (not expired and not revoked).
-     * Composable utility method for authentication checks.
-     */
     public boolean isValid() {
         return !isRevoked && LocalDateTime.now().isBefore(expiresAt);
     }
 
-    /**
-     * Updates last accessed timestamp for session activity tracking.
-     */
     public void updateLastAccessed() {
         this.lastAccessedAt = LocalDateTime.now();
     }

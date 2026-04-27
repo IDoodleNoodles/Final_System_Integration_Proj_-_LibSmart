@@ -3,10 +3,6 @@ package com.example.demo.model;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
-/**
- * Represents a user entity with composable audit fields for tracking changes.
- * Supports soft deletes via deleted_at field for data integrity.
- */
 @Entity
 @Table(name = "users", indexes = {
     @Index(name = "idx_username", columnList = "username", unique = true),
@@ -29,9 +25,7 @@ public class User {
     private String password;
 
     private String fullName;
-
     private String phone;
-
     private String address;
 
     @Lob
@@ -64,140 +58,50 @@ public class User {
         this.createdAt = LocalDateTime.now();
     }
 
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
 
-    public String getUsername() {
-        return username;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
 
-    public String getEmail() {
-        return email;
-    }
+    public String getFullName() { return fullName; }
+    public void setFullName(String fullName) { this.fullName = fullName; }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
 
-    public String getPassword() {
-        return password;
-    }
+    public String getAddress() { return address; }
+    public void setAddress(String address) { this.address = address; }
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
+    public byte[] getPhotoData() { return photoData; }
+    public void setPhotoData(byte[] photoData) { this.photoData = photoData; }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
+    public String getPhotoFileName() { return photoFileName; }
+    public void setPhotoFileName(String photoFileName) { this.photoFileName = photoFileName; }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
+    public String getPhotoContentType() { return photoContentType; }
+    public void setPhotoContentType(String photoContentType) { this.photoContentType = photoContentType; }
 
-    public String getFullName() {
-        return fullName;
-    }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
-    }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
-    public String getPhone() {
-        return phone;
-    }
+    public LocalDateTime getDeletedAt() { return deletedAt; }
+    public void setDeletedAt(LocalDateTime deletedAt) { this.deletedAt = deletedAt; }
 
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
+    public boolean isDeleted() { return deletedAt != null; }
 
-    public String getAddress() {
-        return address;
-    }
+    public void softDelete() { this.deletedAt = LocalDateTime.now(); }
 
-    public void setAddress(String address) {
-        this.address = address;
-    }
+    public void restore() { this.deletedAt = null; }
 
-    public byte[] getPhotoData() {
-        return photoData;
-    }
-
-    public void setPhotoData(byte[] photoData) {
-        this.photoData = photoData;
-    }
-
-    public String getPhotoFileName() {
-        return photoFileName;
-    }
-
-    public void setPhotoFileName(String photoFileName) {
-        this.photoFileName = photoFileName;
-    }
-
-    public String getPhotoContentType() {
-        return photoContentType;
-    }
-
-    public void setPhotoContentType(String photoContentType) {
-        this.photoContentType = photoContentType;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public LocalDateTime getDeletedAt() {
-        return deletedAt;
-    }
-
-    public void setDeletedAt(LocalDateTime deletedAt) {
-        this.deletedAt = deletedAt;
-    }
-
-    /**
-     * Composable method: checks if user is logically deleted.
-     * Enables soft delete pattern for data preservation.
-     */
-    public boolean isDeleted() {
-        return deletedAt != null;
-    }
-
-    /**
-     * Composable method: marks user as deleted (soft delete).
-     * Sets the deletion timestamp to current time.
-     */
-    public void softDelete() {
-        this.deletedAt = LocalDateTime.now();
-    }
-
-    /**
-     * Composable method: restores a soft-deleted user.
-     */
-    public void restore() {
-        this.deletedAt = null;
-    }
-
-    /**
-     * Composable method: updates the modification timestamp.
-     * Should be called whenever user data is modified.
-     */
-    public void markUpdated() {
-        this.updatedAt = LocalDateTime.now();
-    }
+    public void markUpdated() { this.updatedAt = LocalDateTime.now(); }
 }
-

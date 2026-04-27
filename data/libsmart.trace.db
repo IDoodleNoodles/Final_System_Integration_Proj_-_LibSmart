@@ -1,0 +1,33 @@
+2026-04-27 12:43:14.804012+08:00 jdbc[4]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "USERS" not found; SQL statement:
+ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP [42102-240]
+2026-04-27 12:43:38.442529+08:00 jdbc[4]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "USERS" not found (this database is empty); SQL statement:
+select u1_0.id,u1_0.address,u1_0.created_at,u1_0.deleted_at,u1_0.email,u1_0.full_name,u1_0.password,u1_0.phone,u1_0.photo_content_type,u1_0.photo_data,u1_0.photo_file_name,u1_0.updated_at,u1_0.username from users u1_0 where u1_0.username=? [42104-240]
+2026-04-27 12:43:40.254719+08:00 jdbc[4]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "USERS" not found (this database is empty); SQL statement:
+select u1_0.id,u1_0.address,u1_0.created_at,u1_0.deleted_at,u1_0.email,u1_0.full_name,u1_0.password,u1_0.phone,u1_0.photo_content_type,u1_0.photo_data,u1_0.photo_file_name,u1_0.updated_at,u1_0.username from users u1_0 where u1_0.username=? [42104-240]
+2026-04-27 12:43:40.571746+08:00 jdbc[4]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "USERS" not found (this database is empty); SQL statement:
+select u1_0.id,u1_0.address,u1_0.created_at,u1_0.deleted_at,u1_0.email,u1_0.full_name,u1_0.password,u1_0.phone,u1_0.photo_content_type,u1_0.photo_data,u1_0.photo_file_name,u1_0.updated_at,u1_0.username from users u1_0 where u1_0.username=? [42104-240]
+2026-04-27 12:43:40.745999+08:00 jdbc[4]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "USERS" not found (this database is empty); SQL statement:
+select u1_0.id,u1_0.address,u1_0.created_at,u1_0.deleted_at,u1_0.email,u1_0.full_name,u1_0.password,u1_0.phone,u1_0.photo_content_type,u1_0.photo_data,u1_0.photo_file_name,u1_0.updated_at,u1_0.username from users u1_0 where u1_0.username=? [42104-240]
+2026-04-27 12:43:40.896829+08:00 jdbc[4]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "USERS" not found (this database is empty); SQL statement:
+select u1_0.id,u1_0.address,u1_0.created_at,u1_0.deleted_at,u1_0.email,u1_0.full_name,u1_0.password,u1_0.phone,u1_0.photo_content_type,u1_0.photo_data,u1_0.photo_file_name,u1_0.updated_at,u1_0.username from users u1_0 where u1_0.username=? [42104-240]
+2026-04-27 12:43:41.063572+08:00 jdbc[4]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "USERS" not found (this database is empty); SQL statement:
+select u1_0.id,u1_0.address,u1_0.created_at,u1_0.deleted_at,u1_0.email,u1_0.full_name,u1_0.password,u1_0.phone,u1_0.photo_content_type,u1_0.photo_data,u1_0.photo_file_name,u1_0.updated_at,u1_0.username from users u1_0 where u1_0.username=? [42104-240]
+2026-04-27 12:43:41.226048+08:00 jdbc[4]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "USERS" not found (this database is empty); SQL statement:
+select u1_0.id,u1_0.address,u1_0.created_at,u1_0.deleted_at,u1_0.email,u1_0.full_name,u1_0.password,u1_0.phone,u1_0.photo_content_type,u1_0.photo_data,u1_0.photo_file_name,u1_0.updated_at,u1_0.username from users u1_0 where u1_0.username=? [42104-240]
+2026-04-27 12:43:41.386030+08:00 jdbc[4]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "USERS" not found (this database is empty); SQL statement:
+select u1_0.id,u1_0.address,u1_0.created_at,u1_0.deleted_at,u1_0.email,u1_0.full_name,u1_0.password,u1_0.phone,u1_0.photo_content_type,u1_0.photo_data,u1_0.photo_file_name,u1_0.updated_at,u1_0.username from users u1_0 where u1_0.username=? [42104-240]
+2026-04-27 12:43:41.551414+08:00 jdbc[4]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "USERS" not found (this database is empty); SQL statement:
+select u1_0.id,u1_0.address,u1_0.created_at,u1_0.deleted_at,u1_0.email,u1_0.full_name,u1_0.password,u1_0.phone,u1_0.photo_content_type,u1_0.photo_data,u1_0.photo_file_name,u1_0.updated_at,u1_0.username from users u1_0 where u1_0.username=? [42104-240]
+2026-04-27 12:43:42.253436+08:00 jdbc[4]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "USERS" not found (this database is empty); SQL statement:
+select u1_0.id,u1_0.address,u1_0.created_at,u1_0.deleted_at,u1_0.email,u1_0.full_name,u1_0.password,u1_0.phone,u1_0.photo_content_type,u1_0.photo_data,u1_0.photo_file_name,u1_0.updated_at,u1_0.username from users u1_0 where u1_0.username=? [42104-240]
