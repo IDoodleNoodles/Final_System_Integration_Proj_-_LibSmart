@@ -78,6 +78,16 @@ body {
   margin: 15px 0;
 }
 
+.sidebar li a {
+  color: white;
+  text-decoration: none;
+}
+
+.sidebar li.active a {
+  text-decoration: underline;
+  font-weight: 700;
+}
+
 .dashboard-content {
   flex: 1;
   padding: 40px;
